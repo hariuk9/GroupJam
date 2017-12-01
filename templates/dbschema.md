@@ -36,12 +36,18 @@ __table__ = Table('user_auths', Base.metadata,
         Column('access_token', String(50)),
         Column('token_type', String(50)),
         Column('scope', String(50)),
-        Column('expires_in', Integer, primary_key=True),
+        Column('expires_in', Integer),
         Column('refresh_token', String(50))
     )
 
 __table__ = Table('top_songs', Base.metadata,
         Column('user_id', Integer, primary_key=True),
-        Column('id', String(50)),
-        
+        Column('id', Float)
+        Column('id', Float)
+        Column('id', Float)
+        Column('id', Float)
+        Column('id', Float)
+        Column('id', Float)
+        Column('id', Float)
+
     )
