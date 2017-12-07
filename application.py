@@ -65,7 +65,24 @@ def get_user_tracks():
 def index():
     group_playlist = gen_playlist(tracks)
     print(group_playlist)
-    return render_template("index.html")
+    token = util.prompt_for_user_token(username,client_id='320606726d354474b5da64233babe82d',client_secret='f2d15a0b056343cfa094525adfc45f27')
+    if token:
+        sp = spotipy.Spotify(auth=token)
+        playlist = sp.user_playlist_create(username, "Group Playlist", "Intelligent Group Playlist")
+        scope = 'playlist-modify-public'
+        token = util.prompt_for_user_token(username, scope)
+        if token:
+            sp = spotipy.Spotify(auth=token)
+            sp.trace = False
+            playlist = sp.user_playlist_add_tracks(username, playlist, group_playlist) # playlist is now populated
+
+            # Add play button
+
+        else:
+            print("Can't get token for", username)
+    else:
+        print("Can't get token for", username)
+    return render_template("index.html", playlist_name = playlist)
 
 
 @app.route("/login", methods=["GET", "POST"])
@@ -101,7 +118,7 @@ def gen_playlist(track_ids):
     total_features={}
     song_counter=0.0
     for song in track_ids:
-        song_counter+=1
+        song_counter+=1.0
         features = sp.audio_features(song)
         for key, value in features:
             total_features.key += value
