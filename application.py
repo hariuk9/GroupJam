@@ -32,42 +32,45 @@ app.config["SESSION_PERMANENT"] = False
 app.config["SESSION_TYPE"] = "filesystem"
 Session(app)
 
-tracks = [u'0DAsxISzun85PbsqAfIzeC', u'5lLuArl5DPSd0pYVl9KOWD', u'4uhvMW7ly7tJil31YYscAN', u'7vGuf3Y35N4wmASOKLUVVU', u'7t2bFihaDvhIrd2gn2CWJO', u'5Z3GHaZ6ec9bsiI5BenrbY', u'47OVNnZJzIkrsEiZ4n187p', u'1OmcAT5Y8eg5bUPv9qJT4R', u'6QgjcU0zLnzq5OrUoSZ3OK', u'7HNpXPaTcX5CoNBjTAEWBr']
+tracks = []
 
+@app.route("/tracks", methods = ["POST"])
+def get_user_tracks():
+    ids = json.loads(request.data)['ids']
+    tracks.extend(ids)
 
-# @app.route("/tracks", methods = ["POST"])
-# def get_user_tracks():
-#     ids = json.loads(request.data)['ids']
-#     tracks.extend(ids)
-
-#     print(tracks)
-#     return 'success'
+    return 'success'
 
 @app.route("/")
 @login_required
 def index():
-    group_playlist = gen_playlist(tracks)
-    print(group_playlist)
-    token = util.prompt_for_user_token(username,client_id='320606726d354474b5da64233babe82d',client_secret='f2d15a0b056343cfa094525adfc45f27')
+    username = session["username"]
+
+    if session.get("token") and session.get("playlist_dict"):
+        group_playlist = gen_playlist(tracks)
+        playlist = sp.user_playlist_add_tracks(username, session["playlist_dict"]['id'], group_playlist) # playlist is now populated
+        return render_template("index.html", playlist_url=session["playlist_dict"]['uri'])
+
+    token = util.prompt_for_user_token(username,'playlist-modify-public user-top-read', client_id=client_id,client_secret=client_secret,redirect_uri='http://127.0.0.1')
     if token:
+        session["token"] = token
         sp = spotipy.Spotify(auth=token)
-        playlist = sp.user_playlist_create(username, "Group Playlist", "Intelligent Group Playlist")
-        scope = 'playlist-modify-public'
-        token = util.prompt_for_user_token(username, scope)
-        if token:
-            sp = spotipy.Spotify(auth=token)
-            sp.trace = False
-            playlist = sp.user_playlist_add_tracks(username, playlist, group_playlist) # playlist is now populated
+        track_dict = sp.current_user_top_tracks(limit=20, offset=0, time_range='medium_term') # get the hosts top tracks
+        tracks = list(map(lambda x: x['id'], track_dict['items']))
+        group_playlist = gen_playlist(tracks)
 
-            # Add play button
+        playlist_dict = sp.user_playlist_create(username, "Group Playlist")
+        playlist_id = playlist_dict['id']
+        user = playlist_dict['owner']
 
-        else:
-            print("Can't get token for", username)
+        playlist = sp.user_playlist_add_tracks(username, playlist_id, group_playlist) # playlist is now populated
     else:
-        print("Can't get token for", username)
-    return render_template("index.html", playlist_name = playlist)
+        print("Can't get token for " + username)
 
-username=""
+    url = "https://open.spotify.com/embed?uri=" + playlist_dict['uri']
+    session["playlist_url"] = playlist_dict['uri']
+    return render_template("index.html", playlist_url=url)
+
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
@@ -77,13 +80,13 @@ def login():
 
     # User reached route via POST (as by submitting a form via POST)
     if request.method == "POST":
-
         # Ensure username was submitted
-        if not request.form.get("username"):
-            return render_template("login.html")
-        username = request.form.get("username")
+        if request.form.get("username"):
+            session["username"] = request.form.get("username")
+            return redirect("/")
 
-    return redirect("/")
+    else:
+        return render_template("login.html")
 
 
 def compare_score(song, total_features, features):
@@ -99,20 +102,19 @@ def gen_playlist(track_ids):
     sp = spotipy.Spotify(client_credentials_manager=client_credentials_manager)
     total_features={"danceability":0.0, "energy":0.0, "key":0.0, "loudness":0.0, "mode":0.0, "speechiness":0.0, "acousticness":0.0, "instrumentalness":0.0, "liveness":0.0, "valence":0.0, "tempo":0.0}
     song_counter=0.0
+    
     for song in track_ids:
-
-        song_counter+=1.0
-        
-
-        
+        print(song)
+        song_counter += 1
         features = sp.audio_features(tracks=[song])
-        print(features[0])
+        print(features)
         for key, value in features[0].items():
             if isinstance(value, float):
                 total_features[key] += value
-    for key, value in total_features.items():
-        print(value)
-        value /= song_counter
+        
+    if song_counter > 0:
+        for key, value in total_features.items():
+            value /= song_counter
 
     #now we find all the songs close enough to the "average"
     song_list=[]
@@ -124,7 +126,6 @@ def gen_playlist(track_ids):
     if len(song_list) > 20:
         song_list = song_list[:20]
     song_list = [song_list[i][0] for i in range(len(song_list))]
-    print(song_list)
     return song_list
 
 

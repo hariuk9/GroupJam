@@ -20,7 +20,7 @@ export default class CodeInputScreen extends Component {
   }
 
   async getTracks() {
-    const limit = 10;
+    const limit = 15;
     try {
       let response = await fetch(`https://api.spotify.com/v1/me/top/tracks?limit=${limit}`, {
         method: 'GET',
