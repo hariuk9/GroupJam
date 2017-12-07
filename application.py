@@ -1,13 +1,10 @@
 import json
-import sys
 import spotipy
 import spotipy.util as util
 from spotipy.oauth2 import SpotifyClientCredentials
 from flask import abort, Flask, flash, redirect, render_template, request, session
 from flask_session import Session
 from tempfile import mkdtemp
-from werkzeug.exceptions import default_exceptions
-from werkzeug.security import check_password_hash, generate_password_hash
 
 from helpers import login_required
 
@@ -32,8 +29,10 @@ app.config["SESSION_PERMANENT"] = False
 app.config["SESSION_TYPE"] = "filesystem"
 Session(app)
 
+# list of track ids gathered from users
 tracks = []
 
+# retrieve top tracks from newly connected user
 @app.route("/tracks", methods = ["POST"])
 def get_user_tracks():
     ids = json.loads(request.data)['ids']
@@ -47,10 +46,11 @@ def get_user_tracks():
 def index():
     username = session["username"]
 
+    # host has already logged in and playlist is already made
     if session.get("token") and session.get("playlist_dict"):
         group_playlist = gen_playlist(tracks)
         sp = spotipy.Spotify(auth=session["token"])
-        playlist = sp.user_playlist_add_tracks(username, session["playlist_dict"]['id'], group_playlist) # playlist is now populated
+        playlist = sp.user_playlist_add_tracks(username, session["playlist_dict"]['id'], group_playlist) # add to the playlist
         return render_template("index.html", playlist_url=session["playlist_dict"]['uri'])
 
     token = util.prompt_for_user_token(username,'playlist-modify-public user-top-read', client_id=client_id,client_secret=client_secret,redirect_uri='http://127.0.0.1')
@@ -95,7 +95,6 @@ def login():
 # Returns a score of how similar two songs are. The lower the score, the lesser the differences.
 def compare_score(song, total_features, features):
     score=0.0
-    #features = sp.audio_features(song)
     for key, value in features[0].items():
         if isinstance(value, float):
             score+=(value*1.0)/((1.0)*(total_features[key]+value))
@@ -121,7 +120,7 @@ def gen_playlist(track_ids):
         for key, value in total_features.items():
             value /= song_counter
 
-    #now we find all the songs close enough to the "average"
+    # now we find all the songs close enough to the "average"
     song_list=[]
     for song in track_ids:
         score = compare_score(song, total_features, sp.audio_features(tracks=[song]))
