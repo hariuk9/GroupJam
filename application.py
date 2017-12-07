@@ -61,14 +61,14 @@ def get_user_tracks():
 
 
 @app.route("/")
-@login_required
+#@login_required
 def index():
     group_playlist = gen_playlist(tracks)
     print(group_playlist)
     return render_template("index.html")
 
 
-@app.route("/authorize", methods=["GET", "POST"])
+@app.route("/login", methods=["GET", "POST"])
 def login():
     """Log user in"""
     return render_template("login.html")
@@ -96,26 +96,26 @@ def compare_score(song, total_features):
     return score
 
 def gen_playlist(track_ids):
-    client_credentials_manager = SpotifyClientCredentials()
-    sp = spotipy.Spotify(client_credentials_manager=client_credentials_manager)
+    #client_credentials_manager = SpotifyClientCredentials(client_id)
+    sp = spotipy.Spotify()#client_credentials_manager=client_credentials_manager)
     total_features={}
     song_counter=0.0
     for song in track_ids:
         song_counter+=1
         features = sp.audio_features(song)
         for key, value in features:
-        total_features.key += value
+            total_features.key += value
     for value in total_features.items():
         value /= song_counter
 
     #now we find all the songs close enough to the "average"
     song_list=[]
-    for song in results:
+    for song in track_ids:
         score = compare_score(song, total_features)
         song_list.append((song, score))
     song_list = sorted(song_list, key = lambda x: x[1])
 
-    if len(song_list > 20):
+    if len(song_list) > 20:
         song_list = song_list[:20]
 
     return song_list
