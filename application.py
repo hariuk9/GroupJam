@@ -52,7 +52,7 @@ def index():
         return render_template("index.html", playlist_url=session["playlist_dict"]['uri'])
 
     # perfom oauth and create group playlist
-    token = util.prompt_for_user_token(username,'playlist-modify-public user-top-read', client_id=client_id,client_secret=client_secret,redirect_uri='https://group-jam-host.herokuapp.com/')
+    token = util.prompt_for_user_token(username,'playlist-modify-public user-top-read');
     if token:
         session["token"] = token
         sp = spotipy.Spotify(auth=token)
