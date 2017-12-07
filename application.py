@@ -29,10 +29,12 @@ app.config["SESSION_PERMANENT"] = False
 app.config["SESSION_TYPE"] = "filesystem"
 Session(app)
 
+# list of track ids gathered from users
 tracks = []
 
 @app.route("/tracks", methods = ["POST"])
 def get_user_tracks():
+    # retrieve top tracks from newly connected user
     ids = json.loads(request.data)['ids']
     tracks.extend(ids)
 
@@ -42,14 +44,15 @@ def get_user_tracks():
 @login_required
 def index():
     username = session["username"]
-
+    # host has already logged in and playlist is already made
     if session.get("token") and session.get("playlist_dict"):
         group_playlist = gen_playlist(tracks)
         sp = spotipy.Spotify(auth=session["token"])
-        playlist = sp.user_playlist_add_tracks(username, session["playlist_dict"]['id'], group_playlist) # playlist is now populated
+        playlist = sp.user_playlist_add_tracks(username, session["playlist_dict"]['id'], group_playlist) # add to the playlist
         return render_template("index.html", playlist_url=session["playlist_dict"]['uri'])
 
-    token = util.prompt_for_user_token(username,'playlist-modify-public user-top-read', client_id=client_id,client_secret=client_secret,redirect_uri='https://group-jam-host.herokuapp.com')
+    # perfom oauth and create group playlist
+    token = util.prompt_for_user_token(username,'playlist-modify-public user-top-read', client_id=client_id,client_secret=client_secret,redirect_uri='https://group-jam-host.herokuapp.com/')
     if token:
         session["token"] = token
         sp = spotipy.Spotify(auth=token)
@@ -90,23 +93,21 @@ def login():
 
 def compare_score(song, total_features, features):
     score=0.0
-    #features = sp.audio_features(song)
     for key, value in features[0].items():
         if isinstance(value, float):
             score+=(value*1.0)/((1.0)*(total_features[key]+value))
     return score
 
 def gen_playlist(track_ids):
+    """Determine which tracks (capped at 20) best suit the group"""
     client_credentials_manager = SpotifyClientCredentials(client_id, client_secret)
     sp = spotipy.Spotify(client_credentials_manager=client_credentials_manager)
     total_features={"danceability":0.0, "energy":0.0, "key":0.0, "loudness":0.0, "mode":0.0, "speechiness":0.0, "acousticness":0.0, "instrumentalness":0.0, "liveness":0.0, "valence":0.0, "tempo":0.0}
     song_counter=0.0
     
     for song in track_ids:
-        print(song)
         song_counter += 1
         features = sp.audio_features(tracks=[song])
-        print(features)
         for key, value in features[0].items():
             if isinstance(value, float):
                 total_features[key] += value
@@ -115,7 +116,7 @@ def gen_playlist(track_ids):
         for key, value in total_features.items():
             value /= song_counter
 
-    #now we find all the songs close enough to the "average"
+    # now we find all the songs close enough to the "average"
     song_list=[]
     for song in track_ids:
         score = compare_score(song, total_features, sp.audio_features(tracks=[song]))
