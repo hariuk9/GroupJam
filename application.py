@@ -3,7 +3,7 @@ import sys
 import spotipy
 import spotipy.util as util
 from spotipy.oauth2 import SpotifyClientCredentials
-from flask import Flask, flash, redirect, render_template, request, session
+from flask import abort, Flask, flash, redirect, render_template, request, session
 #from flask_sqlalchemy import SQLAlchemy
 from flask_session import Session
 from tempfile import mkdtemp
@@ -51,10 +51,20 @@ aggregate = {"danceability": 0.0,
     "tempo": 0.0
 }
 
+tracks = []
+
+@app.route("/tracks", methods = ["POST"])
+def get_user_tracks():
+    if not request.args.get("track_ids"):
+        abort(400)
+    tracks.append(request.args.get("track_ids"))
+
+
 @app.route("/")
 @login_required
 def index():
-
+    group_playlist = gen_playlist(tracks)
+    print(group_playlist)
     return render_template("index.html")
 
 
