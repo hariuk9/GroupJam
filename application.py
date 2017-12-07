@@ -41,6 +41,7 @@ def get_user_tracks():
 
     return 'success'
 
+# Main page. Runs playlist generation and displays the embedded playlist.
 @app.route("/")
 @login_required
 def index():
@@ -58,6 +59,7 @@ def index():
         sp = spotipy.Spotify(auth=token)
         track_dict = sp.current_user_top_tracks(limit=20, offset=0, time_range='medium_term') # get the hosts top tracks
         tracks = list(map(lambda x: x['id'], track_dict['items']))
+
         group_playlist = gen_playlist(tracks)
 
         playlist_dict = sp.user_playlist_create(username, "Group Playlist")
@@ -90,7 +92,7 @@ def login():
     else:
         return render_template("login.html")
 
-
+# Returns a score of how similar two songs are. The lower the score, the lesser the differences.
 def compare_score(song, total_features, features):
     score=0.0
     #features = sp.audio_features(song)
@@ -99,21 +101,22 @@ def compare_score(song, total_features, features):
             score+=(value*1.0)/((1.0)*(total_features[key]+value))
     return score
 
+# Generates and intelligent playlist
 def gen_playlist(track_ids):
     client_credentials_manager = SpotifyClientCredentials(client_id, client_secret)
     sp = spotipy.Spotify(client_credentials_manager=client_credentials_manager)
     total_features={"danceability":0.0, "energy":0.0, "key":0.0, "loudness":0.0, "mode":0.0, "speechiness":0.0, "acousticness":0.0, "instrumentalness":0.0, "liveness":0.0, "valence":0.0, "tempo":0.0}
     song_counter=0.0
     
+    # Aggregating song features
     for song in track_ids:
-        print(song)
         song_counter += 1
         features = sp.audio_features(tracks=[song])
-        print(features)
         for key, value in features[0].items():
             if isinstance(value, float):
                 total_features[key] += value
-        
+    
+    # Averaging out the songs features
     if song_counter > 0:
         for key, value in total_features.items():
             value /= song_counter
@@ -125,6 +128,7 @@ def gen_playlist(track_ids):
         song_list.append((song, score))
     song_list = sorted(song_list, key = lambda x: x[1])
 
+    # Getting the first 20 closest, best songs.
     if len(song_list) > 20:
         song_list = song_list[:20]
     song_list = [song_list[i][0] for i in range(len(song_list))]
