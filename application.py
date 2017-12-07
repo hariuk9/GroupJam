@@ -48,6 +48,7 @@ def index():
 
     if session.get("token") and session.get("playlist_dict"):
         group_playlist = gen_playlist(tracks)
+        sp = spotipy.Spotify(auth=session["token"])
         playlist = sp.user_playlist_add_tracks(username, session["playlist_dict"]['id'], group_playlist) # playlist is now populated
         return render_template("index.html", playlist_url=session["playlist_dict"]['uri'])
 
@@ -77,6 +78,7 @@ def login():
     """Log user in"""
     # Forget any user_id
     session.clear()
+    tracks = []
 
     # User reached route via POST (as by submitting a form via POST)
     if request.method == "POST":
