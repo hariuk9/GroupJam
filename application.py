@@ -52,7 +52,7 @@ def index():
         playlist = sp.user_playlist_add_tracks(username, session["playlist_dict"]['id'], group_playlist) # playlist is now populated
         return render_template("index.html", playlist_url=session["playlist_dict"]['uri'])
 
-    token = util.prompt_for_user_token(username,'playlist-modify-public user-top-read', client_id=client_id,client_secret=client_secret,redirect_uri='http://127.0.0.1')
+    token = util.prompt_for_user_token(username,'playlist-modify-public user-top-read', client_id=client_id,client_secret=client_secret,redirect_uri='https://group-jam-host.herokuapp.com')
     if token:
         session["token"] = token
         sp = spotipy.Spotify(auth=token)
