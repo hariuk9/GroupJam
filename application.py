@@ -35,13 +35,13 @@ Session(app)
 tracks = [u'0DAsxISzun85PbsqAfIzeC', u'5lLuArl5DPSd0pYVl9KOWD', u'4uhvMW7ly7tJil31YYscAN', u'7vGuf3Y35N4wmASOKLUVVU', u'7t2bFihaDvhIrd2gn2CWJO', u'5Z3GHaZ6ec9bsiI5BenrbY', u'47OVNnZJzIkrsEiZ4n187p', u'1OmcAT5Y8eg5bUPv9qJT4R', u'6QgjcU0zLnzq5OrUoSZ3OK', u'7HNpXPaTcX5CoNBjTAEWBr']
 
 
-@app.route("/tracks", methods = ["POST"])
-def get_user_tracks():
-    ids = json.loads(request.data)['ids']
-    tracks.extend(ids)
+# @app.route("/tracks", methods = ["POST"])
+# def get_user_tracks():
+#     ids = json.loads(request.data)['ids']
+#     tracks.extend(ids)
 
-    print(tracks)
-    return 'success'
+#     print(tracks)
+#     return 'success'
 
 @app.route("/")
 #@login_required
@@ -88,17 +88,18 @@ def register():
     return render_template("register.html")
 
 
-def compare_score(song, total_features):
+def compare_score(song, total_features, features):
     score=0.0
-    features = sp.audio_features(song)
-    for key, value in features:
-        score+=(value*1.0)/((1.0)*(total_features.key+value))
+    #features = sp.audio_features(song)
+    for key, value in features[0].items():
+        if isinstance(value, float):
+            score+=(value*1.0)/((1.0)*(total_features[key]+value))
     return score
 
 def gen_playlist(track_ids):
     client_credentials_manager = SpotifyClientCredentials(client_id, client_secret)
     sp = spotipy.Spotify(client_credentials_manager=client_credentials_manager)
-    total_features={}
+    total_features={"danceability":0.0, "energy":0.0, "key":0.0, "loudness":0.0, "mode":0.0, "speechiness":0.0, "acousticness":0.0, "instrumentalness":0.0, "liveness":0.0, "valence":0.0, "tempo":0.0}
     song_counter=0.0
     for song in track_ids:
 
@@ -107,22 +108,25 @@ def gen_playlist(track_ids):
 
         
         features = sp.audio_features(tracks=[song])
-
-        for key, value in features:
-            total_features.key += value
-    for value in total_features.items():
+        print(features[0])
+        for key, value in features[0].items():
+            if isinstance(value, float):
+                total_features[key] += value
+    for key, value in total_features.items():
+        print(value)
         value /= song_counter
 
     #now we find all the songs close enough to the "average"
     song_list=[]
     for song in track_ids:
-        score = compare_score(song, total_features)
+        score = compare_score(song, total_features, sp.audio_features(tracks=[song]))
         song_list.append((song, score))
     song_list = sorted(song_list, key = lambda x: x[1])
 
     if len(song_list) > 20:
         song_list = song_list[:20]
-
+    song_list = [song_list[i][0] for i in range(len(song_list))]
+    print(song_list)
     return song_list
 
 
