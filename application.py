@@ -65,13 +65,14 @@ def index():
         user = playlist_dict['owner']
 
         playlist = sp.user_playlist_add_tracks(username, playlist_id, group_playlist) # playlist is now populated
+
+        url = "https://open.spotify.com/embed?uri=" + playlist_dict['uri']
+        session["playlist_url"] = playlist_dict['uri']
+        return render_template("index.html", playlist_url=url)
     else:
         print("Can't get token for " + username)
-
-    url = "https://open.spotify.com/embed?uri=" + playlist_dict['uri']
-    session["playlist_url"] = playlist_dict['uri']
-    return render_template("index.html", playlist_url=url)
-
+        redirect('/login')
+        
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
