@@ -51,11 +51,14 @@ export default class CodeInputScreen extends Component {
 
   async sendTracks(ids) {
     try {
-      let backendResponse = await fetch(`${baseURL}/tracks?track_ids=${ids}`, {
+      let backendResponse = await fetch(`${baseURL}/tracks`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
-        }
+        },
+        body: JSON.stringify({
+          ids: ids
+        })
       });
       console.log(backendResponse);
     } catch(error) {

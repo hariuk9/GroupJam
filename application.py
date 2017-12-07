@@ -1,10 +1,9 @@
-from cs50 import SQL
+import json
 import sys
 import spotipy
 import spotipy.util as util
 from spotipy.oauth2 import SpotifyClientCredentials
 from flask import abort, Flask, flash, redirect, render_template, request, session
-#from flask_sqlalchemy import SQLAlchemy
 from flask_session import Session
 from tempfile import mkdtemp
 from werkzeug.exceptions import default_exceptions
@@ -14,6 +13,9 @@ from helpers import login_required
 
 # Configure application
 app = Flask(__name__)
+
+client_id = '320606726d354474b5da64233babe82d'
+client_secret = 'f2d15a0b056343cfa094525adfc45f27'
 
 # Ensure responses aren't cached
 if app.config["DEBUG"]:
@@ -30,35 +32,16 @@ app.config["SESSION_PERMANENT"] = False
 app.config["SESSION_TYPE"] = "filesystem"
 Session(app)
 
-#db = SQL("sqlite:///finance.db")
+tracks = [u'0DAsxISzun85PbsqAfIzeC', u'5lLuArl5DPSd0pYVl9KOWD', u'4uhvMW7ly7tJil31YYscAN', u'7vGuf3Y35N4wmASOKLUVVU', u'7t2bFihaDvhIrd2gn2CWJO', u'5Z3GHaZ6ec9bsiI5BenrbY', u'47OVNnZJzIkrsEiZ4n187p', u'1OmcAT5Y8eg5bUPv9qJT4R', u'6QgjcU0zLnzq5OrUoSZ3OK', u'7HNpXPaTcX5CoNBjTAEWBr']
 
-#initializing the authentication token to something
-auth = 0
-
-#@app.route("/auth", methods = ["GET", "POST"])
-#def auth_user():
-
-aggregate = {"danceability": 0.0,
-    "energy": 0.0,
-    "key": 0.0,
-    "loudness": 0.0,
-    "mode": 0.0,
-    "speechiness": 0.0,
-    "acousticness": 0.0,
-    "instrumentalness": 0.0,
-    "liveness": 0.0,
-    "valence": 0.0,
-    "tempo": 0.0
-}
-
-tracks = []
 
 @app.route("/tracks", methods = ["POST"])
 def get_user_tracks():
-    if not request.args.get("track_ids"):
-        abort(400)
-    tracks.append(request.args.get("track_ids"))
+    ids = json.loads(request.data)['ids']
+    tracks.extend(ids)
 
+    print(tracks)
+    return 'success'
 
 @app.route("/")
 #@login_required
@@ -96,13 +79,13 @@ def compare_score(song, total_features):
     return score
 
 def gen_playlist(track_ids):
-    #client_credentials_manager = SpotifyClientCredentials(client_id)
-    sp = spotipy.Spotify()#client_credentials_manager=client_credentials_manager)
+    client_credentials_manager = SpotifyClientCredentials(client_id, client_secret)
+    sp = spotipy.Spotify(client_credentials_manager=client_credentials_manager)
     total_features={}
     song_counter=0.0
     for song in track_ids:
         song_counter+=1
-        features = sp.audio_features(song)
+        features = sp.audio_features(tracks=[song])
         for key, value in features:
             total_features.key += value
     for value in total_features.items():
