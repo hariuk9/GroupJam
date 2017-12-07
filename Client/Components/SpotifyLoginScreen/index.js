@@ -39,6 +39,7 @@ export default class SpotifyLoginScreen extends Component {
       'https://accounts.spotify.com/authorize' +
       '?response_type=token' +
       `&client_id=${client_id}` +
+      '&scope=user-top-read' +
       '&redirect_uri=group-jam-client://callback' +
       `&state=${state}`
     );

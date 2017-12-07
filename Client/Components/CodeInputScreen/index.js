@@ -16,26 +16,26 @@ export default class CodeInputScreen extends Component {
   };
 
   componentWillMount() {
-    this.sendAccessToken();
+    this.getTracks().then((ids) => this.sendTracks(ids));
   }
 
-  async sendAccessToken() {
+  async getTracks() {
+    const limit = 10;
     try {
-      let response = await fetch(`${baseURL}/auth`, {
-        method: 'POST',
+      let response = await fetch(`https://api.spotify.com/v1/me/top/tracks?limit=${limit}`, {
+        method: 'GET',
         headers: {
-          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Authorization': `Bearer ${this.props.access_token}`
         },
-        body: JSON.stringify({
-          access_token: `${this.props.access_token}`
-        })
       });
+
       let responseJson = await response.json();
-      console.log(responseJson);
+      return responseJson.items.map((track) => track.id);
     } catch(error) {
       Alert.alert(
         'Error',
-        'Unable to connect to host. Please check your connection and try again.',
+        'Unable to retrieve data from Spotify. Please check your connection and try again.',
         [{text: 'OK', onPress: () => this.props.navigator.replace(
             {
               component: IntroScreen,
@@ -46,6 +46,32 @@ export default class CodeInputScreen extends Component {
         { cancelable: false }
 
         )
+    }
+  }
+
+  async sendTracks(ids) {
+    try {
+      let backendResponse = await fetch(`${baseURL}/tracks?track_ids=${ids}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      console.log(backendResponse);
+    } catch(error) {
+      Alert.alert(
+        'Error',
+        'Unable to connect to host. Please check your connection and try again.',
+        [{text: 'OK', onPress: () => this.props.navigator.replace(
+          {
+            component: IntroScreen,
+            title: 'Log In',
+          }
+        )
+        }],
+        { cancelable: false }
+
+      )
     }
   }
 
