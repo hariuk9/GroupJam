@@ -38,3 +38,8 @@ main img
     /* constrain images on small screens */
     max-width: 100%;
 }
+
+main #now-playing {
+    height: 400px;
+    width: 400px;
+}
