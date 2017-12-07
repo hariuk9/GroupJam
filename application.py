@@ -2,6 +2,7 @@ from cs50 import SQL
 import sys
 import spotipy
 import spotipy.util as util
+from spotipy.oauth2 import SpotifyClientCredentials
 from flask import Flask, flash, redirect, render_template, request, session
 #from flask_sqlalchemy import SQLAlchemy
 from flask_session import Session
@@ -53,17 +54,14 @@ aggregate = {"danceability": 0.0,
 @app.route("/")
 @login_required
 def index():
+
     return render_template("index.html")
 
 
 @app.route("/authorize", methods=["GET", "POST"])
 def login():
     """Log user in"""
-
-
-
     return render_template("login.html")
-
 
 @app.route("/logout")
 def logout():
@@ -75,19 +73,43 @@ def logout():
     # Redirect user to login form
     return redirect("/")
 
-
 @app.route("/register", methods=["GET", "POST"])
 def register():
     return render_template("register.html")
 
-def score(songs):
-    for
+
+def compare_score(song, total_features):
+    score=0.0
+    features = sp.audio_features(song)
+    for key, value in features:
+        score+=(value*1.0)/((1.0)*(total_features.key+value))
+    return score
+
+def gen_playlist(track_ids):
+    client_credentials_manager = SpotifyClientCredentials()
+    sp = spotipy.Spotify(client_credentials_manager=client_credentials_manager)
+    total_features={}
+    song_counter=0.0
+    for song in track_ids:
+        song_counter+=1
+        features = sp.audio_features(song)
+        for key, value in features:
+        total_features.key += value
+    for value in total_features.items():
+        value /= song_counter
+
+    #now we find all the songs close enough to the "average"
+    song_list=[]
+    for song in results:
+        score = compare_score(song, total_features)
+        song_list.append((song, score))
+    song_list = sorted(song_list, key = lambda x: x[1])
+
+    if len(song_list > 20):
+        song_list = song_list[:20]
+
+    return song_list
 
 
-
-
-    url = "idk" #the get request for the
-    r = requests.get(url)
-    data=r.json()
 
 
