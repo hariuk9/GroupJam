@@ -44,7 +44,7 @@ tracks = [u'0DAsxISzun85PbsqAfIzeC', u'5lLuArl5DPSd0pYVl9KOWD', u'4uhvMW7ly7tJil
 #     return 'success'
 
 @app.route("/")
-#@login_required
+@login_required
 def index():
     group_playlist = gen_playlist(tracks)
     print(group_playlist)
@@ -67,25 +67,23 @@ def index():
         print("Can't get token for", username)
     return render_template("index.html", playlist_name = playlist)
 
+username=""
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
     """Log user in"""
-    return render_template("login.html")
-
-@app.route("/logout")
-def logout():
-    """Log user out"""
-
     # Forget any user_id
     session.clear()
 
-    # Redirect user to login form
-    return redirect("/")
+    # User reached route via POST (as by submitting a form via POST)
+    if request.method == "POST":
 
-@app.route("/register", methods=["GET", "POST"])
-def register():
-    return render_template("register.html")
+        # Ensure username was submitted
+        if not request.form.get("username"):
+            return render_template("login.html")
+        username = request.form.get("username")
+
+    return redirect("/")
 
 
 def compare_score(song, total_features, features):
